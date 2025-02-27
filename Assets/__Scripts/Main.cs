@@ -57,19 +57,31 @@ public class Main : MonoBehaviour
     void SpawnCheckpoints(int count)
     {
         float spacing = 8f; // Space between checkpoint pairs
+        float lastY = 0f; // Track last checkpoint's y-position
+
         for (int i = 0; i < count; i++)
         {
             float xPos = Random.Range(-bndCheck.camWidth + spacing, bndCheck.camWidth - spacing);
+            float yPos;
+
+            // Ensure checkpoints are not at the same y position
+            do
+            {
+                yPos = bndCheck.camHeight + spawnYOffset + (i * checkpointSpacing);
+            } while (Mathf.Abs(yPos - lastY) < spacing); // Adjust spacing as needed
+
+            lastY = yPos; // Store last y-position
 
             // Left checkpoint
-            Vector3 leftPos = new Vector3(xPos - spacing / 2, bndCheck.camHeight + spawnYOffset + (i * checkpointSpacing), 0);
+            Vector3 leftPos = new Vector3(xPos - spacing / 2, yPos, 0);
             GameObject leftCheckpoint = Instantiate(prefabCheckpoint, leftPos, Quaternion.identity);
 
             // Right checkpoint
-            Vector3 rightPos = new Vector3(xPos + spacing / 2, bndCheck.camHeight + spawnYOffset + (i * checkpointSpacing), 0);
+            Vector3 rightPos = new Vector3(xPos + spacing / 2, yPos, 0);
             GameObject rightCheckpoint = Instantiate(prefabCheckpoint, rightPos, Quaternion.identity);
         }
     }
+
 
     void SpawnObstacle()
     {
