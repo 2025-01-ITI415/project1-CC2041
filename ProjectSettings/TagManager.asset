@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Penguin
   - Obstacle
+  - PowerUp
   layers:
   - Default
   - TransparentFX

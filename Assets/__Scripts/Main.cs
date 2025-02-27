@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI; // For UI timer
@@ -8,17 +9,24 @@ public class Main : MonoBehaviour
 {
     static public Main S; // Singleton
 
-    [Header("Set in Inspector")]
+    [Header("Checkpoint Settings")]
     public GameObject prefabCheckpoint; // Checkpoint prefab
-    public GameObject prefabObstacle; // Obstacle prefab
     public int totalCheckpoints = 5; // Number of checkpoints required to win
     public float spawnYOffset = 10f; // Checkpoint spawn height above screen
+    public float checkpointSpacing = 10f; // Distance between checkpoints
+
+    [Header("Obstacle Settings")]
+    public GameObject prefabObstacle; // Obstacle prefab
+    public int maxObstacles = 10; // Maximum number of obstacles allowed
     public float obstacleSpawnRate = 1f; // How often obstacles appear
-    public Text timerText; // UI Text to display elapsed time
+    private List<GameObject> activeObstacles = new List<GameObject>(); // Track active obstacles
 
     [Header("Player Settings")]
     public int playerHealth = 3; // Starting health
     public int obstacleDamage = 1; // Damage per obstacle hit
+
+    [Header("UI Settings")]
+    public TextMeshProUGUI timerText; // UI Text to display elapsed time
 
     private BoundsCheck bndCheck;
     private int checkpointsPassed = 0;
@@ -48,21 +56,29 @@ public class Main : MonoBehaviour
 
     void SpawnCheckpoints(int count)
     {
+        float spacing = 8f; // Space between checkpoint pairs
         for (int i = 0; i < count; i++)
         {
-            Vector3 pos = new Vector3(
-                Random.Range(-bndCheck.camWidth, bndCheck.camWidth),
-                bndCheck.camHeight + spawnYOffset + (i * 5), // Spread them out
-                0
-            );
+            float xPos = Random.Range(-bndCheck.camWidth + spacing, bndCheck.camWidth - spacing);
 
-            GameObject go = Instantiate(prefabCheckpoint);
-            go.transform.position = pos;
+            // Left checkpoint
+            Vector3 leftPos = new Vector3(xPos - spacing / 2, bndCheck.camHeight + spawnYOffset + (i * checkpointSpacing), 0);
+            GameObject leftCheckpoint = Instantiate(prefabCheckpoint, leftPos, Quaternion.identity);
+
+            // Right checkpoint
+            Vector3 rightPos = new Vector3(xPos + spacing / 2, bndCheck.camHeight + spawnYOffset + (i * checkpointSpacing), 0);
+            GameObject rightCheckpoint = Instantiate(prefabCheckpoint, rightPos, Quaternion.identity);
         }
     }
 
     void SpawnObstacle()
     {
+        // Check if we've reached the max allowed obstacles
+        if (activeObstacles.Count >= maxObstacles)
+        {
+            return;
+        }
+
         GameObject go = Instantiate(prefabObstacle);
 
         Vector3 pos = new Vector3(
@@ -71,6 +87,14 @@ public class Main : MonoBehaviour
             0
         );
         go.transform.position = pos;
+
+        activeObstacles.Add(go);
+    }
+
+    public void RemoveObstacle(GameObject obstacle)
+    {
+        activeObstacles.Remove(obstacle);
+        Destroy(obstacle);
     }
 
     public void PlayerPassedCheckpoint()
