@@ -21,17 +21,31 @@ public class Main : MonoBehaviour
     public float obstacleSpawnRate = 1f; // How often obstacles appear
     private List<GameObject> activeObstacles = new List<GameObject>(); // Track active obstacles
 
+    [Header("Tree Settings")]
+    public GameObject prefabTree; // Tree prefab
+    public float treeSpawnRate = 2f; // How often trees spawn
+    public float treeSpawnXOffset = 12f; // Ensure trees spawn outside the playable bounds
+    private List<GameObject> activeTrees = new List<GameObject>(); // Track active trees
+    public float treeDespawnY = 50f; // Ensure trees only despawn when they reach a lower limit
+
+
     [Header("Player Settings")]
     public int playerHealth = 3; // Starting health
     public int obstacleDamage = 1; // Damage per obstacle hit
 
     [Header("UI Settings")]
     public TextMeshProUGUI timerText; // UI Text to display elapsed time
+    public TextMeshProUGUI checkpointText; // UI to display remaining checkpoints
+
+    [Header("Movement Bounds")]
+    public float penguinBoundX = 8f; // Set this to match the Penguin's movement bounds
+
 
     private BoundsCheck bndCheck;
     private int checkpointsPassed = 0;
     private float elapsedTime = 0f;
     private bool gameFinished = false;
+    private List<float> usedYPositions = new List<float>(); // Track used y-positions
 
     private void Awake()
     {
@@ -43,7 +57,11 @@ public class Main : MonoBehaviour
 
         // Start spawning obstacles continuously
         InvokeRepeating("SpawnObstacle", 2f, 1f / obstacleSpawnRate);
+        InvokeRepeating("SpawnTree", 2f, 1f / treeSpawnRate);
+
+        UpdateCheckpointUI();
     }
+
 
     private void Update()
     {
@@ -53,34 +71,52 @@ public class Main : MonoBehaviour
             timerText.text = "Time: " + elapsedTime.ToString("F2") + "s"; // Display elapsed time
         }
     }
+    void UpdateCheckpointUI()
+    {
+        int remainingCheckpoints = totalCheckpoints - checkpointsPassed;
+        checkpointText.text = "Checkpoints Left: " + remainingCheckpoints;
+    }
 
     void SpawnCheckpoints(int count)
     {
-        float spacing = 8f; // Space between checkpoint pairs
-        float lastY = 0f; // Track last checkpoint's y-position
+        float minX = -bndCheck.checkpointSpawnXBound;
+        float maxX = bndCheck.checkpointSpawnXBound;
+
+        float spacing = 8f;
+        List<Vector2> usedPositions = new List<Vector2>();
 
         for (int i = 0; i < count; i++)
         {
-            float xPos = Random.Range(-bndCheck.camWidth + spacing, bndCheck.camWidth - spacing);
-            float yPos;
+            float xPos, yPos;
+            bool positionValid;
 
-            // Ensure checkpoints are not at the same y position
             do
             {
+                positionValid = true;
+                xPos = Random.Range(minX, maxX);
                 yPos = bndCheck.camHeight + spawnYOffset + (i * checkpointSpacing);
-            } while (Mathf.Abs(yPos - lastY) < spacing); // Adjust spacing as needed
 
-            lastY = yPos; // Store last y-position
+                foreach (Vector2 pos in usedPositions)
+                {
+                    if (Vector2.Distance(new Vector2(xPos, yPos), pos) < checkpointSpacing)
+                    {
+                        positionValid = false;
+                        break;
+                    }
+                }
+            } while (!positionValid);
 
-            // Left checkpoint
-            Vector3 leftPos = new Vector3(xPos - spacing / 2, yPos, 0);
-            GameObject leftCheckpoint = Instantiate(prefabCheckpoint, leftPos, Quaternion.identity);
+            usedPositions.Add(new Vector2(xPos, yPos));
 
-            // Right checkpoint
-            Vector3 rightPos = new Vector3(xPos + spacing / 2, yPos, 0);
-            GameObject rightCheckpoint = Instantiate(prefabCheckpoint, rightPos, Quaternion.identity);
+            GameObject checkpoint = Instantiate(prefabCheckpoint, new Vector3(xPos, yPos, 0), Quaternion.identity);
+            Debug.Log($"Spawned Checkpoint at X: {xPos}, Y: {yPos}");
+
+            usedPositions.Add(new Vector2(checkpoint.transform.position.x, checkpoint.transform.position.y));
         }
     }
+
+
+
 
 
     void SpawnObstacle()
@@ -91,16 +127,10 @@ public class Main : MonoBehaviour
             return;
         }
 
-        GameObject go = Instantiate(prefabObstacle);
-
-        Vector3 pos = new Vector3(
-            Random.Range(-bndCheck.camWidth, bndCheck.camWidth),
-            bndCheck.camHeight + spawnYOffset,
-            0
-        );
-        go.transform.position = pos;
-
-        activeObstacles.Add(go);
+        float xPos = Random.Range(-bndCheck.obstacleSpawnXBound, bndCheck.obstacleSpawnXBound);
+        float yPos = bndCheck.camHeight + spawnYOffset;
+        GameObject obstacle = Instantiate(prefabObstacle, new Vector3(xPos, yPos, 0), Quaternion.identity);
+        activeObstacles.Add(obstacle);
     }
 
     public void RemoveObstacle(GameObject obstacle)
@@ -112,13 +142,28 @@ public class Main : MonoBehaviour
     public void PlayerPassedCheckpoint()
     {
         checkpointsPassed++;
+        UpdateCheckpointUI();
+        Debug.Log("Checkpoints Passed: " + checkpointsPassed + "/" + totalCheckpoints);
         if (checkpointsPassed >= totalCheckpoints)
         {
             GameOver();
         }
     }
+    void SpawnTree()
+    {
+        float minTreeX = bndCheck.checkpointSpawnXBound + bndCheck.treeSpawnXOffset;
+        float maxTreeX = -bndCheck.checkpointSpawnXBound - bndCheck.treeSpawnXOffset;
 
-    public void PlayerHitObstacle()
+        float xPos = (Random.value > 0.5f) ? Random.Range(minTreeX, minTreeX + 5f) : Random.Range(maxTreeX - 5f, maxTreeX);
+        float yPos = bndCheck.camHeight + spawnYOffset;
+        
+        GameObject tree = Instantiate(prefabTree, new Vector3(xPos, yPos, 0), Quaternion.identity);
+        activeTrees.Add(tree);
+    }
+
+
+
+public void PlayerHitObstacle()
     {
         playerHealth -= obstacleDamage;
         if (playerHealth <= 0)

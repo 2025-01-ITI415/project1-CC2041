@@ -10,6 +10,7 @@ public class Penguin : MonoBehaviour
     public float speed = 30;
     public float rollMult = -20; // Controls how much the penguin tilts when turning
     public float tiltMult = 10; // Controls forward-backward tilting when moving up/down
+    private float originalSpeed;
     public float gameRestartDelay = 2f;
 
     private GameObject lastTriggerGo = null;
@@ -24,6 +25,7 @@ public class Penguin : MonoBehaviour
         {
             Debug.LogError("Penguin.Awake() - Attempted to assign second Penguin.S!");
         }
+        originalSpeed = speed; // store the inital speed
     }
 
     void Update()
@@ -41,6 +43,17 @@ public class Penguin : MonoBehaviour
         // Rotate the penguin for a rolling effect
         transform.rotation = Quaternion.Euler(yAxis * tiltMult, 0, -xAxis * rollMult);
 
+    }
+
+    public void applySlow(float slowMultiplier, float durration)
+    {
+        speed *= slowMultiplier; // reduce speed
+        Invoke("ResetSpeed", durration); // reset after duration
+    }
+
+    void ResetSpeed()
+    {
+        speed = originalSpeed; // restore to original
     }
 
     private void OnTriggerEnter(Collider other)

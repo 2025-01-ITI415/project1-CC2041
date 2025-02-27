@@ -4,10 +4,12 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - Penguin
   - Obstacle
   - PowerUp
   - EndPoint
+  - CheckPoint
+  - Penguin
+  - Hero
   layers:
   - Default
   - TransparentFX

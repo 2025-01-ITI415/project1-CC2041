@@ -5,6 +5,9 @@ public class Obstacle : MonoBehaviour
     public float scrollSpeed = 5f; // Speed at which obstacles move up
     private float despawnHeight = 50f; // Y position where obstacles get deleted
 
+    public float slowDuration = 2f; // How long slowdown lasts
+    public float slowAmount = .05f; // Speed reduction multiplyer
+
     void Update()
     {
         // Move the obstacle upwards
@@ -23,6 +26,8 @@ public class Obstacle : MonoBehaviour
         {
             Main.S.PlayerHitObstacle(); // Calls function to reduce health
             Destroy(gameObject); // Remove obstacle on collision
+            other.GetComponent<Penguin>().applySlow(slowAmount, slowDuration);
+
         }
     }
 }
