@@ -7,7 +7,7 @@ public class Tree : MonoBehaviour
 
     void Update()
     {
-        transform.position += Vector3.down * scrollSpeed * Time.deltaTime;
+        transform.position += Vector3.up * scrollSpeed * Time.deltaTime;
 
         // Remove the tree when it moves off-screen
         if (transform.position.y < despawnY)
